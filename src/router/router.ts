@@ -21,7 +21,7 @@ export class Router {
 			const endpointData = parseEndpoint(req.url||"");
 
 			if(!endpointData) {
-				sendError(res, StatusCode.NOT_FOUND, ErrorMessage.NOT_FOUND);
+				sendError(res, StatusCode.NOT_FOUND, ErrorMessage.REQUEST_URL_FORMAT_INVALID);
 				return;
 			}
 
@@ -29,18 +29,15 @@ export class Router {
 
 			if(routeHandlers){
 				const handler = routeHandlers?.[req.method as HttpMethod];
-				console.log("routeHandlers Method", req.method, handler);
 				if(handler){
 					handler(req, res);
 				}else{
 					sendError(res, StatusCode.METHOD_NOT_ALLOWED, ErrorMessage.METHOD_NOT_ALLOWED);
 				}
 			}else{
-				console.log("key handleRequest ROUTER", `${req.method}:${req.url || ""}`);
 				sendError(res, StatusCode.NOT_FOUND, ErrorMessage.NOT_FOUND);
 			}
-		}catch(e){
-			console.log("Error try catch", e);
+		}catch{
 			sendError(res, StatusCode.SERVER_ERROR, ErrorMessage.SERVER_ERROR);
 		}
 

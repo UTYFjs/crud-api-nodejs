@@ -12,7 +12,6 @@ export class Storage{
 	}
 
 	getAllUsers(): User[] {
-		console.log("this.users", this.users);
 		return Array.from(this.users.values());
 	}
 
@@ -21,21 +20,20 @@ export class Storage{
 	}
 
 	createUser(user: User): User {
-		console.log("this.users", this.users);
 		this.users.set(user.id, user);
 		return user;
 	}
 
-	updateUser(id: string, user: User): User | undefined {
+	updateUser(id: string, user: Partial<User>): User | undefined {
 		if (this.users.has(id)) {
-			this.users.set(id, user);
-			return user;
+			const updatedUser: User = {...this.users.get(id),...user} as User;
+			this.users.set(id, updatedUser);
+			return updatedUser;
 		}
 		return undefined;
 	}
 
 	async deleteUser(id: string): Promise<boolean> {
-		console.log("deleteUser",id);
 		return this.users.delete(id);
 	}
 

@@ -1,6 +1,6 @@
 import { validate } from "uuid";
 import { sendError, sendResponse } from "../helper/response";
-import { validateBody } from "../helper/validateBody";
+import { validateBody, validatePUTBody } from "../helper/validateBody";
 import { UserService } from "../services/user.service";
 import { ErrorMessage, Handler, HttpMethod, StatusCode } from "../types/types";
 
@@ -97,10 +97,20 @@ export const routes: Route[] = [
 
 			req.on("end", async ()=>{
 				try{
-					const newUser = JSON.parse(body);
-					const updatedUser = await service.updateUser(userId, newUser.username, newUser.age, newUser.hobbies );
+
 					
-					sendResponse(res, StatusCode.OK, updatedUser);
+					const newUser = JSON.parse(body);
+
+
+					if(await validatePUTBody(newUser)){
+						const updatedUser = await service.updateUser(userId, newUser.username, newUser.age, newUser.hobbies );
+					
+						sendResponse(res, StatusCode.OK, updatedUser);
+					}else{
+						sendError(res, StatusCode.BAD_REQUEST, ErrorMessage.REQUEST_BODY_FORMAT_INVALID);
+					}
+
+					
 				}catch{
 					sendError(res, StatusCode.SERVER_ERROR, ErrorMessage.SERVER_ERROR);
 				}
@@ -113,7 +123,6 @@ export const routes: Route[] = [
 		method: HttpMethod.DELETE,
 		path: "/api/users/:userId",
 		handler: async (req, res) => {
-			console.log("Handler",req.method, req.url,);
 			const userId = req.url?.split("/").pop() || "";
 			if (!validate(userId)) {
 				sendError(res, StatusCode.BAD_REQUEST, ErrorMessage.USER_ID_INVALID);

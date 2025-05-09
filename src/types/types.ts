@@ -34,3 +34,9 @@ export enum HttpMethod {
 export type HttpMethodHandlers  = {
     [key in HttpMethod]?: Handler;
 };
+export interface UserInterface{
+    id: string,
+    username: string,
+    age: number;
+    hobbies:string[];
+  }
