@@ -1,0 +1,11 @@
+# dependencies
+/node_modules
+
+.env
+.vscode 
+
+# testing
+/coverage
+
+# production
+/build
