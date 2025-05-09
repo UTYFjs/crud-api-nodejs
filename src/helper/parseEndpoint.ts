@@ -9,7 +9,7 @@ export interface EndpointData {
   }
   
 
-export const parseEndpoint = (endpoint: string): EndpointData => {
+export const parseEndpoint = (endpoint: string): EndpointData | null   => {
 	if (/^\/api\/users\/?$/.test(endpoint)) {
 		return {
 			endpoint: Endpoint.USERS,
@@ -24,6 +24,5 @@ export const parseEndpoint = (endpoint: string): EndpointData => {
 			userId,
 		};
 	}
-	throw new Error("incorrect endpoint");
-	// throw new InvalidEndpointError();
+	return null;
 };

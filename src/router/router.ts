@@ -1,33 +1,48 @@
 import { IncomingMessage, ServerResponse } from "http";
 import { parseEndpoint } from "../helper/parseEndpoint";
+import { sendError } from "../helper/response";
+import { ErrorMessage, Handler, HttpMethod, HttpMethodHandlers, StatusCode } from "../types/types";
 
-export type Handler = (req: IncomingMessage, res: ServerResponse) => void;
 
 
 export class Router {
-	private routes: Map<string, Handler>;
+	private routes: Map<string, HttpMethodHandlers >;
 	constructor() {
 		this.routes = new Map();
 	}
 
 	addRoute(method: string, path: string, handler: Handler): void {
-		this.routes.set(`${method}:${path}`, handler);
+	 // собираем коллекцию вида {'/route': {GET: hadler, PUT: handler}}:  Map<string, HttpMethodHandlers >
+		this.routes.set(path, ({...this.routes.get(path), [method]: handler}));
 	}
 
 	handleRequest(req: IncomingMessage, res: ServerResponse): void {
+		try{
+			const endpointData = parseEndpoint(req.url||"");
 
-		const endpointData = parseEndpoint(req.url||"");
+			if(!endpointData) {
+				sendError(res, StatusCode.NOT_FOUND, ErrorMessage.NOT_FOUND);
+				return;
+			}
 
-		const key = `${req.method}:${endpointData.endpoint || ""}`;
-		console.log("endpointData", endpointData);
-		const handler = this.routes.get(key);
-		console.log("key handleRequest ROUTER", key);
-		if (handler) {
-			handler(req, res);
-		} else {
-			console.log("key handleRequest ROUTER", `${req.method}:${req.url || ""}`);
-			res.writeHead(404, { "Content-Type": "application/json" });
-			res.end(JSON.stringify({ message: "Not Found" }));
+			const routeHandlers = this.routes.get(endpointData.endpoint);
+
+			if(routeHandlers){
+				const handler = routeHandlers?.[req.method as HttpMethod];
+				console.log("routeHandlers Method", req.method, handler);
+				if(handler){
+					handler(req, res);
+				}else{
+					sendError(res, StatusCode.METHOD_NOT_ALLOWED, ErrorMessage.METHOD_NOT_ALLOWED);
+				}
+			}else{
+				console.log("key handleRequest ROUTER", `${req.method}:${req.url || ""}`);
+				sendError(res, StatusCode.NOT_FOUND, ErrorMessage.NOT_FOUND);
+			}
+		}catch(e){
+			console.log("Error try catch", e);
+			sendError(res, StatusCode.SERVER_ERROR, ErrorMessage.SERVER_ERROR);
 		}
+
 	}
 }

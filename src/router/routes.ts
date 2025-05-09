@@ -1,78 +1,77 @@
-import { User } from "../data/user.model";
-// import { UserController } from "../controller/user.controller";
+import { validate } from "uuid";
+import { sendError, sendResponse } from "../helper/response";
+import { validateBody } from "../helper/validateBody";
 import { UserService } from "../services/user.service";
-import { Handler } from "./router";
+import { ErrorMessage, Handler, HttpMethod, StatusCode } from "../types/types";
 
 interface Route {
-    method: string;
+    method: HttpMethod;
     path: string;
     handler: Handler;
 }
-// const controller = new UserController()
+
 const service = new UserService();
 
 export const routes: Route[] = [
 	{
-		method: "GET",
+		method: HttpMethod.GET,
 		path: "/api/users",
 		handler: async (req, res) => {
-			console.log("Handler",req.method, req.url,);
-			// Логика для получения всех пользователей
-			// const users = controller.getUsers(req, res)
 			const users = await service.getAllUsers();
-			console.log("USERDs ROUTE Handle", users);
-			res.writeHead(200, { "Content-Type": "application/json" });
-			res.end(JSON.stringify( users)); // Пример ответа
+			sendResponse(res, StatusCode.OK, users);
 		}
 	},
 	{
-		method: "GET",
+		method: HttpMethod.GET,
 		path: "/api/users/:userId",
 		handler: async (req, res) => {
-			console.log("Handler",req.method, req.url,);
 			const userId = req.url?.split("/").pop() || "";
-			// Логика для получения пользователя по ID
-			if (!isValidUUID(userId)) {
-				res.writeHead(400, { "Content-Type": "application/json" });
-				res.end(JSON.stringify({ message: "Invalid userId format" }));
+
+			if (!validate(userId)) {
+				sendError(res, StatusCode.BAD_REQUEST, ErrorMessage.USER_ID_INVALID);
 				return;
 			}
 			const user = await service.getUserById(userId);
 
-			console.log("GET USerID", user);
-			// Здесь должна быть логика поиска пользователя
-			res.writeHead(200, { "Content-Type": "application/json" });
-			res.end(JSON.stringify(user)); // Пример ответа
+			if(user){			
+				sendResponse(res, StatusCode.OK, user);
+			}
+			else{
+				sendError(res, StatusCode.NOT_FOUND, ErrorMessage.USER_NOT_FOUND);
+			}
 		}
 	},
 	{
-		method: "POST",
+		method: HttpMethod.POST,
 		path: "/api/users",
 		handler: (req, res) => {
-			console.log("Handler",req.method, req.url,);
 			let body = "";
 			req.on("data", chunk => {
 				body += chunk.toString();
 			});
 
 			req.on("end", async() => {
-				const newUser = JSON.parse(body);
-				console.log("newUser",newUser);
-				// const users = controller.createUser(req, res)
-				// const user = service.createUser(new User(newUser.username, newUser.age, newUser.hobbies));
-				const user = await service.createUser(newUser.username, newUser.age, newUser.hobbies);
-				// if (!newUser.name || !newUser.email) {
-				//     res.writeHead(400, { 'Content-Type': 'application/json' });
-				//     res.end(JSON.stringify({ message: 'Missing required fields' }));
-				//     return;
-				// }
-				res.writeHead(201, { "Content-Type": "application/json" });
-				res.end(JSON.stringify(user)); // Возвращаем созданного пользователя
+				try{
+					if(body){
+						const newUser = JSON.parse(body);
+						if(await validateBody(newUser)){
+							const user = await service.createUser(newUser.username, newUser.age, newUser.hobbies);
+							res.writeHead(201, { "Content-Type": "application/json" });
+							res.end(JSON.stringify(user)); // Возвращаем созданного пользователя
+						}else{
+							sendError(res, StatusCode.BAD_REQUEST, ErrorMessage.REQUEST_BODY_FORMAT_INVALID);
+						}
+					}else{
+						sendError(res, StatusCode.BAD_REQUEST, ErrorMessage.REQUEST_BODY_FORMAT_INVALID);
+					}
+				} catch{
+					sendError(res, StatusCode.SERVER_ERROR, ErrorMessage.SERVER_ERROR);
+				}
 			});
 		}
 	},
 	{
-		method: "PUT",
+		method: HttpMethod.PUT,
 		path: "/api/users/:userId",
 		handler: async (req, res) => {
 			let body ="";
@@ -81,52 +80,53 @@ export const routes: Route[] = [
 			});
 
 			const userId = req.url?.split("/").pop() || "";
-			// if (!isValidUUID(userId)) {
-			// 	res.writeHead(400, { "Content-Type": "application/json" });
-			// 	res.end(JSON.stringify({ message: "Invalid userId format" }));
-			// 	return;
-			// }
+
+			if (!validate(userId)) {
+				sendError(res, StatusCode.BAD_REQUEST, ErrorMessage.USER_ID_INVALID);
+				return;
+			}
+
+			const user = await service.getUserById(userId);
+
+			if(!user){			
+				sendError(res, StatusCode.NOT_FOUND, ErrorMessage.USER_NOT_FOUND);
+				return;
+			}
+
+
 
 			req.on("end", async ()=>{
-				const newUser = JSON.parse(body);
-				console.log("NEW USER PUT", newUser);
-				service.updateUser(userId, newUser.username, newUser.age, newUser.hobbies );
-				// Логика для обновления пользователя
-				res.writeHead(200, { "Content-Type": "application/json" });
-				res.end(JSON.stringify({ id: userId, name: "Updated User" })); // Пример ответа
+				try{
+					const newUser = JSON.parse(body);
+					const updatedUser = await service.updateUser(userId, newUser.username, newUser.age, newUser.hobbies );
+					
+					sendResponse(res, StatusCode.OK, updatedUser);
+				}catch{
+					sendError(res, StatusCode.SERVER_ERROR, ErrorMessage.SERVER_ERROR);
+				}
+
 			});
           
 		}
 	},
 	{
-		method: "DELETE",
+		method: HttpMethod.DELETE,
 		path: "/api/users/:userId",
 		handler: async (req, res) => {
 			console.log("Handler",req.method, req.url,);
 			const userId = req.url?.split("/").pop() || "";
-			// if (!isValidUUID(userId)) {
-			// 	res.writeHead(400, { "Content-Type": "application/json" });
-			// 	res.end(JSON.stringify({ message: "Invalid userId format" }));
-			// 	return;
-			// }
-			// Логика для удаления пользователя
+			if (!validate(userId)) {
+				sendError(res, StatusCode.BAD_REQUEST, ErrorMessage.USER_ID_INVALID);
+				return;
+			}
 	
-
-
-			console.log("ROUTER deleteUser", userId);
 			const userDeleted = await service.deleteUser(userId);
 
-			res.writeHead(204);
-			res.end();
-		
-
+			if(userDeleted){
+				sendResponse(res, StatusCode.NO_CONTENT);
+			}else{
+				sendError(res, StatusCode.NOT_FOUND, ErrorMessage.USER_NOT_FOUND);
+			}
 		}
 	}
 ];
-
-
-// Функция для проверки формата UUID
-function isValidUUID(id: string): boolean {
-	const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
-	return uuidRegex.test(id);
-}
