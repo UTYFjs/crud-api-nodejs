@@ -1,7 +1,5 @@
 import request from "supertest";
 import {server} from "../src/index";
-// import { StatusCode, ErrorMessage } from "../src/app/constants";
-// import { UserInterface } from "../src/app/db";
 import { ErrorMessage, StatusCode, UserInterface } from "../src/types/types";
 
 afterAll(()=> {
