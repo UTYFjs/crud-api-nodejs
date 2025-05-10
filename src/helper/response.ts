@@ -1,8 +1,8 @@
 import { ServerResponse } from "http";
 import { User } from "../data/user.model";
 
-
-export const sendResponse = (res: ServerResponse, statusCode: number, body?: Record<string, string | number | string[]> | User | User[] ) => {
+//TODO check types
+export const sendResponse = (res: ServerResponse, statusCode: number, body?: Record<string, string | number | string[]> | User | User[] | null ) => {
   				res.writeHead(statusCode, { "content-Type": "application/json" });
 	        res.end(JSON.stringify(body));
 };

@@ -3,8 +3,6 @@ import { parseEndpoint } from "../helper/parseEndpoint";
 import { sendError } from "../helper/response";
 import { ErrorMessage, Handler, HttpMethod, HttpMethodHandlers, StatusCode } from "../types/types";
 
-
-
 export class Router {
 	private routes: Map<string, HttpMethodHandlers >;
 	constructor() {
@@ -17,6 +15,7 @@ export class Router {
 	}
 
 	handleRequest(req: IncomingMessage, res: ServerResponse): void {
+		console.log(`Worker on ${req.socket.localPort} PORT processing request`,);
 		try{
 			const endpointData = parseEndpoint(req.url||"");
 

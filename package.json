@@ -11,6 +11,8 @@
     "start": "ts-node src/index.ts",
     "start:dev": "nodemon",
     "start:prod": "tsc && node build/index.js",
+    "start:multi:dev": "nodemon -- --multi",
+    "start:multi:prod": "tsc && node build/index.js -- --multi",
     "build": "tsc",
     "lint": "npx eslint --fix ./src"
   },
